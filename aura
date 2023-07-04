@@ -10,7 +10,7 @@ REPO_DIR="/var/cache/pacman/$DB"
 S3_CONFIG_DIR="/home/kenc/.mcli"
 S3_CMD="mcli --config-dir=$S3_CONFIG_DIR --no-color --quiet"
 S3_ALIAS="minio"
-BUCKET="$S3_ALIAS/aur"A
+BUCKET="$S3_ALIAS/aur"
 
 if [[ "$EUID" == 0 ]]; then
     echo "Please do not run aura as root"
