@@ -17,20 +17,13 @@ if [[ "$EUID" == 0 ]]; then
     exit 1
 fi
 
-if ! command -v aur >/dev/null 2>&1; then
-    echo "ERROR: \"aur\" not installed"
-    exit 1
-fi
-
-if ! command -v mcli >/dev/null 2>&1; then
-    echo "ERROR: \"mcli\" not installed"
-    exit 1
-fi
-
-if ! command -v paccache >/dev/null 2>&1; then
-    echo "ERROR: \"paccache\" not installed"
-    exit 1
-fi
+DEPENDENCIES=(aur mcli paccache)
+for i in "${DEPENDENCIES[@]}"; do
+    if ! command -v "$i" >/dev/null 2>&1; then
+        echo -e "ERROR: \"$i\" not installed!"
+        exit 1
+    fi
+done
 
 if $S3_CMD alias ls --no-color --quiet "$S3_ALIAS" 2>&1 | grep -q "ERROR"; then
     echo "ERROR: S3 alias \"$S3_ALIAS\" not set up"
