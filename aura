@@ -139,7 +139,7 @@ case $subcommand in
     ;;
 
 "check")
-    aur repo --database "$DB" --list -S | aur vercmp --quiet
+    aur repo --database "$DB" -S --upgrades
     ;;
 
 "" | *)
