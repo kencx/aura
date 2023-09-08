@@ -83,6 +83,8 @@ case $subcommand in
         --makepkg-conf=/etc/makepkg-chroot.conf \
         --database "$DB" \
         --root "$REPO_DIR" "$selected"
+    $S3_CMD mirror --overwrite "$REPO_DIR" "$BUCKET"
+    aur_sync
     ;;
 
 "add")
