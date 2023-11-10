@@ -70,7 +70,7 @@ case $subcommand in
     aur_sync
     # consider replacing with
     # aur repo-parse -p "$REPO_DIR/$DB.db.tar.xz" --list
-    aur repo --database "$DB" --list -S
+    aur repo --database "$DB" --list -S | column --table
     ;;
 
 "search")
