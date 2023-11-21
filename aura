@@ -7,6 +7,8 @@ set -euo pipefail
 
 DB="custom"
 REPO_DIR="/var/cache/pacman/$DB"
+IGNORE_FILE="$HOME/.config/aurutils/sync/ignore"
+
 S3_CONFIG_DIR="/home/kenc/.mcli"
 S3_CMD="mcli --config-dir=$S3_CONFIG_DIR --no-color --quiet"
 S3_ALIAS="minio"
@@ -40,22 +42,29 @@ if $S3_CMD ls --no-color --quiet --summarize "$BUCKET" 2>&1 | grep -q "ERROR"; t
     exit 1
 fi
 
+die() {
+    echo "$@"
+    help
+    exit 1
+}
+
 help() {
     cat <<EOF
-usage: aura [subcommand] [args]
+usage: $(basename $0) [subcommand] [args]
 
 aura is an aurutils wrapper for managing a custom Arch repository.
 It should be run with the custom repository's user.
 
   Subcommand:
     help        Print help
-    list, ls    List all packages in DB
     add         Add package to DB from AUR
+    check       Check for package updates
+    clean       Sync and remove old packages
+    ignore      Add package to ignore list
+    list, ls    List all packages in DB
     remove, rm  Remove package from DB
     search      Search for AUR packages
     sync        Sync packages
-    clean       Sync and remove old packages
-    check       Check for package updates
 EOF
 }
 
@@ -75,6 +84,10 @@ case $subcommand in
 
 "search")
     shift
+    if [[ $# -lt 1 ]]; then
+        die "ERROR: missing argument"
+    fi
+
     selected=$(aur search --name "$@" --short | fzf | awk '{split($1, a, "/"); print a[2]}')
     aur sync \
         --no-view \
@@ -87,8 +100,12 @@ case $subcommand in
     aur_sync
     ;;
 
-"add")
+"add" | "update")
     shift
+    if [[ $# -lt 1 ]]; then
+        die "ERROR: missing argument"
+    fi
+
     aur sync \
         --no-view \
         --no-confirm \
@@ -122,7 +139,8 @@ case $subcommand in
         --makepkg-conf=/etc/makepkg-chroot.conf \
         --database "$DB" \
         --root "$REPO_DIR" \
-        --upgrades -k0
+        --upgrades -k0 \
+        --ignore-file="$IGNORE_FILE"
     $S3_CMD mirror --overwrite "$REPO_DIR" "$BUCKET"
     ;;
 
@@ -135,13 +153,35 @@ case $subcommand in
         --makepkg-conf=/etc/makepkg-chroot.conf \
         --database "$DB" \
         --root "$REPO_DIR" \
-        --upgrades -k0
+        --upgrades -k0 \
+        --ignore-file="$IGNORE_FILE"
     sudo paccache -rvk2 -c "$REPO_DIR"
     $S3_CMD mirror --overwrite --remove "$REPO_DIR" "$BUCKET"
     ;;
 
 "check")
     aur repo --database "$DB" -S --upgrades
+    ;;
+
+"ignore")
+    shift
+    if [[ $# -lt 1 ]]; then
+        die "ERROR: missing argument"
+    fi
+
+    if [[ ! -d $(dirname "$IGNORE_FILE") ]]; then
+        mkdir -p "$(dirname "$IGNORE_FILE")"
+    fi
+
+    if [[ ! -f "$IGNORE_FILE" ]]; then
+        touch "$IGNORE_FILE"
+    fi
+
+    for i in "$@"; do
+        echo "custom/$i" >>"$IGNORE_FILE"
+        res=$(sort <"$IGNORE_FILE" | uniq)
+        echo "$res" >"$IGNORE_FILE"
+    done
     ;;
 
 "" | *)
