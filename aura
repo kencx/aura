@@ -72,6 +72,17 @@ aur_sync() {
     sudo pacsync "$DB" >/dev/null
 }
 
+add_ignore() {
+    IFS=$'\n'
+    for line in $1; do
+        item=$(awk '{print $1}' <<<"$line")
+        if grep -q "$item" "$IGNORE_FILE"; then
+            line="$line"$'\t[I]'
+        fi
+        printf "%s\n" "$line"
+    done
+}
+
 subcommand=${1:-}
 
 case $subcommand in
@@ -79,7 +90,7 @@ case $subcommand in
     aur_sync
     # consider replacing with
     # aur repo-parse -p "$REPO_DIR/$DB.db.tar.xz" --list
-    aur repo --database "$DB" --list -S | column --table
+    add_ignore "$(aur repo --database "$DB" --list -S)" | column --table
     ;;
 
 "search")
@@ -160,7 +171,7 @@ case $subcommand in
     ;;
 
 "check")
-    aur repo --database "$DB" -S --upgrades
+    add_ignore "$(aur repo --database "$DB" --upgrades -S)" | column --table
     ;;
 
 "ignore")
