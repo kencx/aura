@@ -59,17 +59,29 @@ It should be run with the custom repository's user.
     help        Print help
     add         Add package to DB from AUR
     check       Check for package updates
-    clean       Sync and remove old packages
+    clean       Sync all and remove old packages
     ignore      Add package to ignore list
     list, ls    List all packages in DB
     remove, rm  Remove package from DB
     search      Search for AUR packages
-    sync        Sync packages
+    sync        Sync/update all packages
+    unignore    Remove package from ignore list
+    update      Update a package
 EOF
 }
 
 aur_sync() {
     sudo pacsync "$DB" >/dev/null
+}
+
+init_ignore_file() {
+    if [[ ! -d $(dirname "$IGNORE_FILE") ]]; then
+        mkdir -p "$(dirname "$IGNORE_FILE")"
+    fi
+
+    if [[ ! -f "$IGNORE_FILE" ]]; then
+        touch "$IGNORE_FILE"
+    fi
 }
 
 add_ignore() {
@@ -80,6 +92,14 @@ add_ignore() {
             line="$line"$'\t[I]'
         fi
         printf "%s\n" "$line"
+    done
+}
+
+remove_ignore() {
+    IFS=$'\n'
+    for pkg in "$@"; do
+        file=$(grep -v "$pkg" "$IGNORE_FILE")
+        echo "$file" >"$IGNORE_FILE"
     done
 }
 
@@ -138,6 +158,7 @@ case $subcommand in
         $S3_CMD find --name "$pkg*.pkg.*" "$BUCKET" --exec "$S3_CMD rm {}"
     done
 
+    remove_ignore "$@"
     aur_sync
     ;;
 
@@ -179,20 +200,23 @@ case $subcommand in
     if [[ $# -lt 1 ]]; then
         die "ERROR: missing argument"
     fi
-
-    if [[ ! -d $(dirname "$IGNORE_FILE") ]]; then
-        mkdir -p "$(dirname "$IGNORE_FILE")"
-    fi
-
-    if [[ ! -f "$IGNORE_FILE" ]]; then
-        touch "$IGNORE_FILE"
-    fi
+    init_ignore_file
 
     for i in "$@"; do
         echo "custom/$i" >>"$IGNORE_FILE"
         res=$(sort <"$IGNORE_FILE" | uniq)
         echo "$res" >"$IGNORE_FILE"
     done
+    ;;
+
+"unignore")
+    shift
+    if [[ $# -lt 1 ]]; then
+        die "ERROR: missing argument"
+    fi
+
+    init_ignore_file
+    remove_ignore "$@"
     ;;
 
 "" | *)
