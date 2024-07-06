@@ -8,6 +8,8 @@ set -euo pipefail
 DB="custom"
 REPO_DIR="/var/cache/pacman/$DB"
 IGNORE_FILE="$HOME/.config/aurutils/sync/ignore"
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 
 S3_CONFIG_DIR="/home/kenc/.mcli"
 S3_CMD="mcli --config-dir=$S3_CONFIG_DIR --no-color --quiet"
@@ -61,11 +63,13 @@ It should be run with the custom repository's user.
     check       Check for package updates
     clean       Sync all and remove old packages
     ignore      Add package to ignore list
+    unignore    Remove package from ignore list
     list, ls    List all packages in DB
+    list-all    List all packages in DB with dependencies
     remove, rm  Remove package from DB
     search      Search for AUR packages
     sync        Sync/update all packages
-    unignore    Remove package from ignore list
+    gc          Remove unused cached files
     update      Update a package
 EOF
 }
@@ -217,6 +221,26 @@ case $subcommand in
 
     init_ignore_file
     remove_ignore "$@"
+    ;;
+
+"gc")
+    shift
+    find "$AURDEST" -name .git -execdir git clean -xdf \;
+
+    cached=$(find "$AURDEST" -name .git | rev | cut -d'/' -f2 | rev | sort)
+    db=$(aur repo --database $DB --list -S | cut -d$'\t' -f1 | sort)
+    diff=$(comm -13 <(echo "$db") <(echo "$cached"))
+
+    for f in $diff; do
+        rm -rf "${AURDEST:?}/${f:?}"
+        echo "Removed $AURDEST/$f"
+    done
+    ;;
+
+"list-all")
+    shift
+    aur_sync
+    aur repo-parse -p "$REPO_DIR/$DB.db.tar.xz" --table | column --table
     ;;
 
 "" | *)
