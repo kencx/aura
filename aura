@@ -65,7 +65,7 @@ It should be run with the custom repository's user.
     ignore      Add package to ignore list
     unignore    Remove package from ignore list
     list, ls    List all packages in DB
-    list-all    List all packages in DB with dependencies
+    list-deps   List all packages in DB with dependencies
     remove, rm  Remove package from DB
     search      Search for AUR packages
     sync        Sync/update all packages
@@ -237,7 +237,7 @@ case $subcommand in
     done
     ;;
 
-"list-all")
+"list-deps")
     shift
     aur_sync
     aur repo-parse -p "$REPO_DIR/$DB.db.tar.xz" --table | column --table
