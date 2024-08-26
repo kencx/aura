@@ -70,7 +70,7 @@ if [[ "$EUID" == 0 ]]; then
     exit 1
 fi
 
-DEPENDENCIES=(aur paccache fzf awk rsync)
+DEPENDENCIES=(aur paccache fzf awk rsync git)
 
 if [[ $S3_MODE == true ]]; then
     DEPENDENCIES+=(mcli)
@@ -311,22 +311,29 @@ case $subcommand in
 
 # Adapted from:  https://github.com/aurutils/aurutils/issues/1103
 "build")
-    git -C "$LOCAL_GIT_REPO_PATH" fetch
+    if ! [[ -d $LOCAL_GIT_REPO_PATH ]]; then
+        echo -e "ERROR: \"$LOCAL_GIT_REPO_PATH\" does not exist!"
+        exit 1
+    fi
+
+    GIT_CMD="git -C $LOCAL_GIT_REPO_PATH"
+    $GIT_CMD fetch
 
     # check which packages were modified upstream
     to_update=()
     for pkg in "$LOCAL_GIT_REPO_PATH"/repos/*; do
-        git -C "$LOCAL_GIT_REPO_PATH" diff --quiet HEAD "$GIT_REMOTE_BRANCH" -- "$pkg" || to_update+=("$pkg")
+        $GIT_CMD diff --quiet HEAD "$GIT_REMOTE_BRANCH" -- "$pkg" || to_update+=("$pkg")
     done
 
-    # merge upstream
-    git -C "$LOCAL_GIT_REPO_PATH" merge "$GIT_REMOTE_BRANCH"
+    $GIT_CMD merge "$GIT_REMOTE_BRANCH"
 
     # run aur-build in parent directory
     if ((${#to_update[@]})); then
-        # FIXME proper formatting
-        # TODO test with multiple to_update packages
-        echo "Updating git packages: ${to_update[*]}"
+        printf "Updating git packages in %s:\n" "$LOCAL_GIT_REPO_PATH"
+        for pkg in "${to_update[@]}"; do
+            printf '\t%s\n' "$(basename $pkg)"
+        done
+
         aur build \
             --chroot \
             --pacman-conf=/etc/pacman-chroot.conf \
