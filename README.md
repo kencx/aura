@@ -13,12 +13,31 @@ this custom repository's user.
 aura requires the following dependencies:
 
 - aurutils
+- git
 - mcli and S3 alias setup
 - paccache
 
-## TODO
-- [ ] Fetch from [non-AUR git
-  repositories](https://github.com/AladW/aurutils/issues/860)
+Set the following variables:
+
+```
+DB="<db-name>"
+S3_ALIAS="<s3-alias>"
+BUCKET="<s3-bucket"
+```
+
+## Private Git Repository
+This is for your own non-AUR packages with custom `PKGBUILD` files.
+
+1. Sparse checkout Git repository
+```bash
+# sparse checkout
+$ mkdir arch-repos || cd arch-repos
+$ git init
+$ git sparse-checkout init
+$ git sparse-checkout add <path>
+```
+
+2. Set the variable `LOCAL_GIT_REPO_PATH`
 
 # License
 
