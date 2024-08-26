@@ -40,6 +40,7 @@ aura requires the following dependencies:
 - aurutils
 - rsync (by default)
 - mcli and S3 alias setup for S3 syncing
+- git
 - paccache
 - fzf, awk (only for `aura search`)
 
@@ -88,7 +89,23 @@ $ aura ignore <package>
 
 # check for updates
 $ aura check
+
 ```
+## Private Git Repository
+This is for your own non-AUR packages with custom `PKGBUILD` files.
+
+1. Sparse checkout Git repository
+```bash
+# sparse checkout
+$ mkdir arch-repos || cd arch-repos
+$ git init
+$ git sparse-checkout init
+$ git sparse-checkout add <path>
+```
+
+2. Set the variable `LOCAL_GIT_REPO_PATH`
+
+3. Run `aura build <package>`
 
 ## TODO
 
