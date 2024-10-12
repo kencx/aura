@@ -34,7 +34,7 @@ if $S3_CMD alias ls --no-color --quiet "$S3_ALIAS" 2>&1 | grep -q "ERROR"; then
     exit 1
 fi
 
-if ! $S3_CMD ready --no-color --quiet "$S3_ALIAS" 2>&1 | grep -q "The cluster is ready"; then
+if ! $S3_CMD ready --no-color --quiet "$S3_ALIAS" 2>&1 | grep -q "The cluster '$S3_ALIAS' is ready"; then
     echo "ERROR: S3 endpoint not ready"
     exit 1
 fi
