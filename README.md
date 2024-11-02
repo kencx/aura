@@ -51,7 +51,7 @@ $ aura check
 
 # License
 
-Copyright (c) 2023 kencx
+Copyright (c) 2023-2024 kencx
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
