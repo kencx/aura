@@ -16,9 +16,38 @@ aura requires the following dependencies:
 - mcli and S3 alias setup
 - paccache
 
-## TODO
-- [ ] Fetch from [non-AUR git
-  repositories](https://github.com/AladW/aurutils/issues/860)
+Set the following variables:
+
+```
+DB="<db-name>"
+S3_ALIAS="<s3-alias>"
+BUCKET="<s3-bucket"
+```
+
+```bash
+$ aura help
+
+# add a package
+$ aura add <package>
+
+# remove a package
+$ aura rm <package>
+
+# list all installed packages
+$ aura ls
+
+# update one package
+$ aura update <package>
+
+# update all packages
+$ aura sync
+
+# ignore a package when syncing
+$ aura ignore <package>
+
+# check for updates
+$ aura check
+```
 
 # License
 
