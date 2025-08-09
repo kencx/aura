@@ -126,9 +126,8 @@ subcommand=${1:-}
 case $subcommand in
 "list" | "ls")
     aur_sync
-    # consider replacing with
-    # aur repo-parse -p "$REPO_DIR/$DB.db.tar.xz" --list
-    add_ignore "$(aur repo --database "$DB" --list -S)" | column --table
+    add_ignore "$(aur repo-parse -p "$REPO_DIR/$DB.db.tar.xz" --list)" | column --table
+    # add_ignore "$(aur repo --database "$DB" --list -S)" | column --table
     ;;
 
 "search")
@@ -169,12 +168,20 @@ case $subcommand in
 
 "remove" | "rm")
     shift
+
+    if [[ $# -lt 1 ]]; then
+        die "ERROR: missing argument"
+    fi
+
     repo-remove "$REPO_DIR/$DB.db.tar.xz" "$@"
 
     for pkg in "$@"; do
         find "$REPO_DIR" -type f -name "$pkg*.pkg.*" -printf "removing %P\n" -delete
         $S3_CMD find --name "$pkg*.pkg.*" "$BUCKET" --exec "$S3_CMD rm {}"
     done
+
+    sudo paccache -rvk2 -c "$REPO_DIR"
+    $S3_CMD mirror --overwrite --remove "$REPO_DIR" "$BUCKET"
 
     remove_ignore "$@"
     aur_sync
