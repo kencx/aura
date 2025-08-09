@@ -15,6 +15,7 @@ aura requires the following dependencies:
 - aurutils
 - mcli and S3 alias setup
 - paccache
+- fzf, awk (only for `aura search`)
 
 Set the following variables:
 

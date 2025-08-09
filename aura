@@ -35,7 +35,7 @@ if [[ "$EUID" == 0 ]]; then
     exit 1
 fi
 
-DEPENDENCIES=(aur mcli paccache)
+DEPENDENCIES=(aur mcli paccache fzf awk)
 for i in "${DEPENDENCIES[@]}"; do
     if ! command -v "$i" >/dev/null 2>&1; then
         echo -e "ERROR: \"$i\" not installed!"
