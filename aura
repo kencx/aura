@@ -25,38 +25,61 @@ IGNORE_FILE="$HOME/.config/aurutils/sync/ignore"
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 
-S3_CONFIG_DIR="$HOME/.mcli"
-S3_CMD="mcli --config-dir=$S3_CONFIG_DIR --no-color --quiet"
-S3_ALIAS="minio"
-BUCKET="$S3_ALIAS/aur"
+# S3 support
+S3_CONFIG_DIR=""
+S3_ALIAS=""
+S3_BUCKET=""
+# S3_CONFIG_DIR="$HOME/.mcli"
+# S3_ALIAS="minio"
+# S3_BUCKET="$S3_ALIAS/aur"
+
+# rsync support
+SSH_USER="kenc"
+SSH_HOST="10.10.10.200"
+SSH_REMOTE_PATH="/mnt/storage/dufs/data/aur"
+FULL_REMOTE_DIR="$SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH"
+SYNC_CMD="rsync --delete --stats --compress --archive --recursive --verbose --human-readable --partial --progress"
+
+# S3 mode
+S3_MODE=false
+if [[ -n "$S3_CONFIG_DIR" || -n "$S3_ALIAS" || -n "$S3_BUCKET" ]]; then
+    S3_MODE=true
+
+    S3_CMD="mcli --config-dir=$S3_CONFIG_DIR --no-color --quiet"
+
+    if $S3_CMD alias ls --no-color --quiet "$S3_ALIAS" 2>&1 | grep -q "ERROR"; then
+        echo "ERROR: S3 alias \"$S3_ALIAS\" not set up"
+        exit 1
+    fi
+
+    if ! $S3_CMD ready --no-color --quiet "$S3_ALIAS" 2>&1 | grep -q "The cluster '$S3_ALIAS' is ready"; then
+        echo "ERROR: S3 endpoint not ready"
+        exit 1
+    fi
+
+    if $S3_CMD ls --no-color --quiet --summarize "$S3_BUCKET" 2>&1 | grep -q "ERROR"; then
+        echo "ERROR: Bucket \"$S3_BUCKET\" does not exist"
+        exit 1
+    fi
+fi
 
 if [[ "$EUID" == 0 ]]; then
     echo "Please do not run aura as root"
     exit 1
 fi
 
-DEPENDENCIES=(aur mcli paccache fzf awk)
+DEPENDENCIES=(aur paccache fzf awk rsync)
+
+if [[ $S3_MODE ]]; then
+    DEPENDENCIES+=(mcli)
+fi
+
 for i in "${DEPENDENCIES[@]}"; do
     if ! command -v "$i" >/dev/null 2>&1; then
         echo -e "ERROR: \"$i\" not installed!"
         exit 1
     fi
 done
-
-if $S3_CMD alias ls --no-color --quiet "$S3_ALIAS" 2>&1 | grep -q "ERROR"; then
-    echo "ERROR: S3 alias \"$S3_ALIAS\" not set up"
-    exit 1
-fi
-
-if ! $S3_CMD ready --no-color --quiet "$S3_ALIAS" 2>&1 | grep -q "The cluster '$S3_ALIAS' is ready"; then
-    echo "ERROR: S3 endpoint not ready"
-    exit 1
-fi
-
-if $S3_CMD ls --no-color --quiet --summarize "$BUCKET" 2>&1 | grep -q "ERROR"; then
-    echo "ERROR: Bucket \"$BUCKET\" does not exist"
-    exit 1
-fi
 
 die() {
     echo "$@"
@@ -86,6 +109,14 @@ It should be run with the custom repository's user.
     gc          Remove unused cached files
     update      Update a package
 EOF
+}
+
+sync_to_remote() {
+    if $S3_MODE; then
+        $S3_CMD mirror --overwrite "$REPO_DIR" "$BUCKET"
+    else
+        $SYNC_CMD "$REPO_DIR/" "$FULL_REMOTE_DIR"
+    fi
 }
 
 aur_sync() {
@@ -144,7 +175,7 @@ case $subcommand in
         --makepkg-conf=/etc/makepkg-chroot.conf \
         --database "$DB" \
         --root "$REPO_DIR" "$selected"
-    $S3_CMD mirror --overwrite "$REPO_DIR" "$BUCKET"
+    sync_to_remote
     aur_sync
     ;;
 
@@ -162,7 +193,7 @@ case $subcommand in
         --makepkg-conf=/etc/makepkg-chroot.conf \
         --database "$DB" \
         --root "$REPO_DIR" "$@"
-    $S3_CMD mirror --overwrite "$REPO_DIR" "$BUCKET"
+    sync_to_remote
     aur_sync
     ;;
 
@@ -177,11 +208,10 @@ case $subcommand in
 
     for pkg in "$@"; do
         find "$REPO_DIR" -type f -name "$pkg*.pkg.*" -printf "removing %P\n" -delete
-        $S3_CMD find --name "$pkg*.pkg.*" "$BUCKET" --exec "$S3_CMD rm {}"
     done
 
     sudo paccache -rvk2 -c "$REPO_DIR"
-    $S3_CMD mirror --overwrite --remove "$REPO_DIR" "$BUCKET"
+    sync_to_remote
 
     remove_ignore "$@"
     aur_sync
@@ -198,7 +228,7 @@ case $subcommand in
         --root "$REPO_DIR" \
         --upgrades -k0 \
         --ignore-file="$IGNORE_FILE"
-    $S3_CMD mirror --overwrite "$REPO_DIR" "$BUCKET"
+    sync_to_remote
     ;;
 
 "clean")
@@ -225,7 +255,7 @@ case $subcommand in
     fi
 
     sudo paccache -rvk2 -c "$REPO_DIR"
-    $S3_CMD mirror --overwrite --remove "$REPO_DIR" "$BUCKET"
+    sync_to_remote
     ;;
 
 "check")

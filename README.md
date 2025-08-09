@@ -1,20 +1,26 @@
 # aura
 
 An [aurutils](https://github.com/AladW/aurutils) wrapper script for managing a
-[custom local Arch Linux repository](https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Custom_local_repository) that is synced to a Minio S3 bucket.
+[custom local Arch Linux repository](https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Custom_local_repository).
 
 ## Setup
 
 This script assumes that your custom repository is hosted on the local
 filesystem at `/var/cache/pacman/$DB` where `$DB` is the name of the custom
-repository. After every operation, it syncs all changes to a remote Minio S3
-bucket.
+repository.
 
->**Note**: This script performs `--remove --overwrite` when syncing to the S3
->bucket, which can cause data loss!
+After every operation, it syncs all repository files (`.db, .pkg.tar.zst` etc.) to the remote storage
+location. This script supports syncing to:
 
-Clients may download and install packages from the S3 bucket (at
-`https://example.xyz/`) by adding the following to their `/etc/pacman.conf`
+- A remote filesystem with `rsync` and SSH
+- A Minio S3 bucket with `mcli`
+
+>**Note**: This script performs `--delete` for rsync and `--remove --overwrite`
+>for mcli when syncing, which can cause data loss!
+
+Clients may download and install packages from the remote fileserver or S3
+bucket (at `https://example.xyz/`) by adding the following to their
+`/etc/pacman.conf`
 
 ```conf
 
@@ -26,22 +32,37 @@ Server = https://example.xyz/path/to/repo
 
 ## Usage
 
-A custom local repository should already be setup, along with the S3 bucket.
-aura should only be run with this custom repository's user.
+A custom local repository should already be setup either via a static file
+server or S3 bucket. aura should only be run with this custom repository's user.
 
 aura requires the following dependencies:
 
 - aurutils
-- mcli and S3 alias setup
+- rsync (by default)
+- mcli and S3 alias setup for S3 syncing
 - paccache
 - fzf, awk (only for `aura search`)
 
-Set the following variables:
+Set the following mandatory variables:
 
 ```
 DB="<db-name>"
-S3_ALIAS="<s3-alias>"
-BUCKET="<s3-bucket"
+```
+
+For non-S3 support, set the following variables:
+
+```
+SSH_USER=""
+SSH_HOST=""
+SSH_REMOTE_PATH=""
+```
+
+For S3 support, set the following variables:
+
+```
+S3_CONFIG_DIR=""
+S3_ALIAS=""
+S3_BUCKET=""
 ```
 
 ```bash
@@ -68,6 +89,12 @@ $ aura ignore <package>
 # check for updates
 $ aura check
 ```
+
+## TODO
+
+- Prevent specific clients from adding or deleting packages (rsync auth, HTTP basic auth or
+  SSH via SSH)
+- Add `init` subcommand for new setup of custom repositories
 
 # License
 
