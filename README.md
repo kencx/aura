@@ -1,14 +1,33 @@
 # aura
 
-An [aurutils](https://github.com/AladW/aurutils) wrapper for managing a
-custom Arch repository hosted on an Minio S3 bucket.
+An [aurutils](https://github.com/AladW/aurutils) wrapper script for managing a
+[custom local Arch Linux repository](https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Custom_local_repository) that is synced to a Minio S3 bucket.
+
+## Setup
+
+This script assumes that your custom repository is hosted on the local
+filesystem at `/var/cache/pacman/$DB` where `$DB` is the name of the custom
+repository. After every operation, it syncs all changes to a remote Minio S3
+bucket.
+
+>**Note**: This script performs `--remove --overwrite` when syncing to the S3
+>bucket, which can cause data loss!
+
+Clients may download and install packages from the S3 bucket (at
+`https://example.xyz/`) by adding the following to their `/etc/pacman.conf`
+
+```conf
+
+[custom]
+SigLevel = Optional TrustAll
+Server = https://example.xyz/path/to/repo
+```
+
 
 ## Usage
 
-A [custom
-repository](https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Custom_local_repository)
-should already be setup, along with the S3 bucket. aura should only be run with
-this custom repository's user.
+A custom local repository should already be setup, along with the S3 bucket.
+aura should only be run with this custom repository's user.
 
 aura requires the following dependencies:
 
