@@ -25,7 +25,7 @@ IGNORE_FILE="$HOME/.config/aurutils/sync/ignore"
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 
-S3_CONFIG_DIR="/home/kenc/.mcli"
+S3_CONFIG_DIR="$HOME/.mcli"
 S3_CMD="mcli --config-dir=$S3_CONFIG_DIR --no-color --quiet"
 S3_ALIAS="minio"
 BUCKET="$S3_ALIAS/aur"
