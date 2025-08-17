@@ -342,7 +342,7 @@ case $subcommand in
             --root "$REPO_DIR" \
             --arg-file <(printf '%s\n' "${to_update[@]}") \
             -srn --clean
-        $S3_CMD mirror --overwrite "$REPO_DIR" "$BUCKET"
+        sync_to_remote
         aur_sync
     fi
     ;;
