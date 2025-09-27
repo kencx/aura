@@ -70,7 +70,7 @@ fi
 
 DEPENDENCIES=(aur paccache fzf awk rsync)
 
-if [[ $S3_MODE ]]; then
+if [[ $S3_MODE == true ]]; then
     DEPENDENCIES+=(mcli)
 fi
 
